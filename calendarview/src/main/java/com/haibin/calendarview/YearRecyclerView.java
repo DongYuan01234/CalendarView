@@ -16,17 +16,18 @@
 package com.haibin.calendarview;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * 年份布局选择View
  */
 public final class YearRecyclerView extends RecyclerView {
-    private CustomCalendarViewDelegate mDelegate;
-    private YearAdapter mAdapter;
+    private CalendarViewDelegate mDelegate;
+    private YearViewAdapter mAdapter;
     private OnMonthSelectedListener mListener;
 
     public YearRecyclerView(Context context) {
@@ -35,7 +36,7 @@ public final class YearRecyclerView extends RecyclerView {
 
     public YearRecyclerView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        mAdapter = new YearAdapter(context);
+        mAdapter = new YearViewAdapter(context);
         setLayoutManager(new GridLayoutManager(context, 3));
         setAdapter(mAdapter);
         mAdapter.setOnItemClickListener(new BaseRecyclerAdapter.OnItemClickListener() {
@@ -46,34 +47,42 @@ public final class YearRecyclerView extends RecyclerView {
                     if (month == null) {
                         return;
                     }
-                    if (!Util.isMonthInRange(month.getYear(), month.getMonth(),
+                    if (!CalendarUtil.isMonthInRange(month.getYear(), month.getMonth(),
                             mDelegate.getMinYear(), mDelegate.getMinYearMonth(),
                             mDelegate.getMaxYear(), mDelegate.getMaxYearMonth())) {
                         return;
                     }
                     mListener.onMonthSelected(month.getYear(), month.getMonth());
+                    if (mDelegate.mYearViewChangeListener != null) {
+                        mDelegate.mYearViewChangeListener.onYearViewChange(true);
+                    }
                 }
             }
         });
     }
 
-    void setup(CustomCalendarViewDelegate delegate) {
+    /**
+     * 设置
+     *
+     * @param delegate delegate
+     */
+    final void setup(CalendarViewDelegate delegate) {
         this.mDelegate = delegate;
         this.mAdapter.setup(delegate);
     }
 
     /**
      * 初始化年视图
+     *
      * @param year year
      */
-    void init(int year) {
+    final void init(int year) {
         java.util.Calendar date = java.util.Calendar.getInstance();
         for (int i = 1; i <= 12; i++) {
             date.set(year, i - 1, 1);
-            int firstDayOfWeek = date.get(java.util.Calendar.DAY_OF_WEEK) - 1;//月第一天为星期几,星期天 == 0
-            int mDaysCount = Util.getMonthDaysCount(year, i);
+            int mDaysCount = CalendarUtil.getMonthDaysCount(year, i);
             Month month = new Month();
-            month.setDiff(firstDayOfWeek);
+            month.setDiff(CalendarUtil.getMonthViewStartDiff(year, i, mDelegate.getWeekStart()));
             month.setCount(mDaysCount);
             month.setMonth(i);
             month.setYear(year);
@@ -82,19 +91,48 @@ public final class YearRecyclerView extends RecyclerView {
     }
 
     /**
+     * 更新周起始
+     */
+    final void updateWeekStart() {
+        for (Month month : mAdapter.getItems()) {
+            month.setDiff(CalendarUtil.getMonthViewStartDiff(month.getYear(), month.getMonth(), mDelegate.getWeekStart()));
+        }
+    }
+
+    /**
+     * 更新字体颜色大小
+     */
+    final void updateStyle(){
+        for (int i = 0; i < getChildCount(); i++) {
+            YearView view = (YearView) getChildAt(i);
+            view.updateStyle();
+            view.invalidate();
+        }
+    }
+
+    /**
      * 月份选择事件
+     *
      * @param listener listener
      */
-    void setOnMonthSelectedListener(OnMonthSelectedListener listener) {
+    final void setOnMonthSelectedListener(OnMonthSelectedListener listener) {
         this.mListener = listener;
     }
 
 
+    void notifyAdapterDataSetChanged(){
+        if(getAdapter() == null){
+            return;
+        }
+        getAdapter().notifyDataSetChanged();
+    }
+
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
         super.onMeasure(widthSpec, heightSpec);
-        int h = MeasureSpec.getSize(heightSpec);
-        mAdapter.setItemHeight(h / 4);
+        int height = MeasureSpec.getSize(heightSpec);
+        int width = MeasureSpec.getSize(widthSpec);
+        mAdapter.setYearViewSize(width / 3, height / 4);
     }
 
     interface OnMonthSelectedListener {

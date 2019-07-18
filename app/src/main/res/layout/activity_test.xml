@@ -1,41 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#fff"
     android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btn_test"
+    <!-- navigation toolbar -->
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="onClick"
-        android:text="展开或者收缩"
-        tools:ignore="HardcodedText" />
+        android:layout_marginLeft="12dp"
+        android:layout_marginRight="12dp"
+        android:background="#fff"
+        android:orientation="horizontal">
 
-    <android.support.v4.widget.NestedScrollView
-        android:id="@+id/nestedScrollView"
+        <ImageButton
+            android:id="@+id/iv_pre"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true" />
+
+        <TextView
+            android:id="@+id/month_year_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="64dp"
+            android:layout_centerInParent="true"
+            android:layout_centerVertical="true"
+            android:gravity="center"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/iv_next"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true" />
+
+    </RelativeLayout>
+
+    <com.haibin.calendarview.CalendarLayout
+        android:id="@+id/calendar_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="#fff"
+        android:orientation="vertical"
+        app:calendar_show_mode="only_month_view"
+        app:default_status="expand">
 
-        <LinearLayout
+        <com.haibin.calendarview.CalendarView
+
+
+            android:id="@+id/calendar_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_marginLeft="0dp"
 
-            <com.haibin.calendarview.CalendarView
-                android:id="@+id/calendarView"
-                app:week_line_background="#f0f000"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:month_view_show_mode="mode_fix" />
 
-            <android.support.v7.widget.RecyclerView
-                android:layout_width="match_parent"
-                android:layout_height="400dp"
-                android:background="#FF0000" />
-        </LinearLayout>
-    </android.support.v4.widget.NestedScrollView>
+            android:layout_marginRight="0dp"
+            app:calendar_match_parent="false"
+
+
+            app:calendar_padding="12dp"
+            app:day_text_size="16sp"
+
+
+            app:month_view_scrollable="false"
+
+            app:month_view_show_mode="mode_fix"
+            app:week_bar_height="46dp"
+
+            app:week_start_with="sun"
+            app:week_view_scrollable="false"
+            app:year_view_scrollable="false" />
+
+    </com.haibin.calendarview.CalendarLayout>
 
 </LinearLayout>

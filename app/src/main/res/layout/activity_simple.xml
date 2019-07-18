@@ -74,7 +74,7 @@
                 android:layout_height="match_parent"
                 android:contentDescription="@string/app_name"
                 android:scaleType="centerInside"
-                android:src="@mipmap/menu_action_calendar_mvp"
+                android:src="@mipmap/ic_calendar"
                 android:tint="#000000" />
 
             <TextView
@@ -103,6 +103,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#fff"
+            app:calendar_padding="10dp"
             app:month_view="com.haibin.calendarviewproject.simple.SimpleMonthView"
             app:calendar_height="46dp"
             app:current_month_lunar_text_color="#CFCFCF"

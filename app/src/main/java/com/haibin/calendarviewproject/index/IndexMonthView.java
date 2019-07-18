@@ -30,15 +30,6 @@ public class IndexMonthView extends MonthView {
         mW = dipToPx(getContext(), 8);
     }
 
-    @Override
-    protected void onPreviewHook() {
-        mCurMonthTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mOtherMonthTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mSchemeTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mCurDayTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mCurMonthLunarTextPaint.setTextSize(dipToPx(getContext(), 12));
-        mOtherMonthLunarTextPaint.setTextSize(dipToPx(getContext(), 12));
-    }
 
     @Override
     protected boolean onDrawSelected(Canvas canvas, Calendar calendar, int x, int y, boolean hasScheme) {
@@ -54,6 +45,7 @@ public class IndexMonthView extends MonthView {
      * @param x        日历Card x起点坐标
      * @param y        日历Card y起点坐标
      */
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @Override
     protected void onDrawScheme(Canvas canvas, Calendar calendar, int x, int y) {
         mSchemeBasicPaint.setColor(calendar.getSchemeColor());
@@ -63,6 +55,7 @@ public class IndexMonthView extends MonthView {
                 y + mItemHeight - mH - mPadding, mSchemeBasicPaint);
     }
 
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @Override
     protected void onDrawText(Canvas canvas, Calendar calendar, int x, int y, boolean hasScheme, boolean isSelected) {
         int cx = x + mItemWidth / 2;
@@ -72,7 +65,9 @@ public class IndexMonthView extends MonthView {
                     calendar.isCurrentDay() ? mCurDayTextPaint :
                             calendar.isCurrentMonth() ? mSchemeTextPaint : mOtherMonthTextPaint);
 
-            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + y + mItemHeight / 10, mCurMonthLunarTextPaint);
+            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + y + mItemHeight / 10,
+                    calendar.isCurrentDay() ? mCurDayLunarTextPaint :
+                    mCurMonthLunarTextPaint);
 
         } else {
             canvas.drawText(String.valueOf(calendar.getDay()), cx, mTextBaseLine + top,

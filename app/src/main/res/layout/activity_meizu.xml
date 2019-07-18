@@ -75,7 +75,7 @@
                 android:tint="#000000"
                 android:contentDescription="@string/app_name"
                 android:scaleType="centerInside"
-                android:src="@mipmap/menu_action_calendar_mvp" />
+                android:src="@mipmap/ic_calendar" />
 
             <TextView
                 android:id="@+id/tv_current_day"
@@ -96,6 +96,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:background="#fff"
+        app:default_status="shrink"
         app:calendar_content_view_id="@+id/recyclerView">
 
         <com.haibin.calendarview.CalendarView
@@ -103,6 +104,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#fff"
+            app:calendar_padding="10dp"
             app:current_month_text_color="#333333"
             app:current_month_lunar_text_color="#CFCFCF"
             app:min_year="2004"
@@ -119,6 +121,8 @@
             app:selected_theme_color="#80cfcfcf"
             app:week_background="#fff"
             app:week_text_color="#111111"
+            app:week_start_with="sun"
+            app:week_view_scrollable="true"
             app:year_view_day_text_color="#333333"
             app:year_view_day_text_size="9sp"
             app:year_view_month_text_color="#ff0000"

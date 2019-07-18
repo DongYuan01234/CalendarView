@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 huanghaibin_dev <huanghaibin_dev@163.com>
+ * WebSite https://github.com/MiracleTimes-Dev
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.haibin.calendarview;
 
 import android.content.Context;
@@ -9,7 +24,7 @@ import android.graphics.Paint;
  * Created by huanghaibin on 2017/11/15.
  */
 
-public class DefaultMonthView extends MonthView {
+public final class DefaultMonthView extends MonthView {
 
     private Paint mTextPaint = new Paint();
     private Paint mSchemeBasicPaint = new Paint();
@@ -20,7 +35,7 @@ public class DefaultMonthView extends MonthView {
     public DefaultMonthView(Context context) {
         super(context);
 
-        mTextPaint.setTextSize(Util.dipToPx(context, 8));
+        mTextPaint.setTextSize(CalendarUtil.dipToPx(context, 8));
         mTextPaint.setColor(0xffFFFFFF);
         mTextPaint.setAntiAlias(true);
         mTextPaint.setFakeBoldText(true);
@@ -30,15 +45,14 @@ public class DefaultMonthView extends MonthView {
         mSchemeBasicPaint.setTextAlign(Paint.Align.CENTER);
         mSchemeBasicPaint.setColor(0xffed5353);
         mSchemeBasicPaint.setFakeBoldText(true);
-        mRadio = Util.dipToPx(getContext(), 7);
-        mPadding = Util.dipToPx(getContext(), 4);
+        mRadio = CalendarUtil.dipToPx(getContext(), 7);
+        mPadding = CalendarUtil.dipToPx(getContext(), 4);
         Paint.FontMetrics metrics = mSchemeBasicPaint.getFontMetrics();
-        mSchemeBaseLine = mRadio - metrics.descent + (metrics.bottom - metrics.top) / 2 + Util.dipToPx(getContext(), 1);
+        mSchemeBaseLine = mRadio - metrics.descent + (metrics.bottom - metrics.top) / 2 + CalendarUtil.dipToPx(getContext(), 1);
 
     }
 
     /**
-     *
      * @param canvas    canvas
      * @param calendar  日历日历calendar
      * @param x         日历Card x起点坐标
@@ -59,9 +73,22 @@ public class DefaultMonthView extends MonthView {
 
         canvas.drawCircle(x + mItemWidth - mPadding - mRadio / 2, y + mPadding + mRadio, mRadio, mSchemeBasicPaint);
 
-        canvas.drawText(calendar.getScheme(), x + mItemWidth - mPadding - mRadio, y + mPadding + mSchemeBaseLine, mTextPaint);
+        canvas.drawText(calendar.getScheme(),
+                x + mItemWidth - mPadding - mRadio / 2 - getTextWidth(calendar.getScheme()) / 2,
+                y + mPadding + mSchemeBaseLine, mTextPaint);
     }
 
+
+    /**
+     * 获取字体的宽
+     * @param text text
+     * @return return
+     */
+    private float getTextWidth(String text) {
+        return mTextPaint.measureText(text);
+    }
+
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @Override
     protected void onDrawText(Canvas canvas, Calendar calendar, int x, int y, boolean hasScheme, boolean isSelected) {
         int cx = x + mItemWidth / 2;
@@ -73,9 +100,11 @@ public class DefaultMonthView extends MonthView {
             canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + y + mItemHeight / 10, mSelectedLunarTextPaint);
         } else if (hasScheme) {
             canvas.drawText(String.valueOf(calendar.getDay()), cx, mTextBaseLine + top,
+                    calendar.isCurrentDay() ? mCurDayTextPaint :
                             calendar.isCurrentMonth() ? mSchemeTextPaint : mOtherMonthTextPaint);
 
-            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + y + mItemHeight / 10, mSchemeLunarTextPaint);
+            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + y + mItemHeight / 10,
+                    calendar.isCurrentDay() ? mCurDayLunarTextPaint : mSchemeLunarTextPaint);
         } else {
             canvas.drawText(String.valueOf(calendar.getDay()), cx, mTextBaseLine + top,
                     calendar.isCurrentDay() ? mCurDayTextPaint :

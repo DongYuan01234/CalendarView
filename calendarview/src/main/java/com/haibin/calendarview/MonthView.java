@@ -15,52 +15,15 @@
  */
 package com.haibin.calendarview;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.text.TextUtils;
 import android.view.View;
 
-import java.util.ArrayList;
-
 /**
- * 月视图基础控件,请使用 MonthView替换，没有任何不同，只是规范命名
- * pleased using MonthView replace BaseCalendarCardView
+ * 月视图基础控件,可自由继承实现
  * Created by huanghaibin on 2017/11/15.
  */
-public abstract class MonthView extends BaseView {
-
-    /**
-     * 月视图ViewPager
-     */
-    MonthViewPager mMonthViewPager;
-
-    /**
-     * 当前日历卡年份
-     */
-    private int mYear;
-
-    /**
-     * 当前日历卡月份
-     */
-    private int mMonth;
-
-
-    /**
-     * 日历的行数
-     */
-    private int mLineCount;
-
-    /**
-     * 日历高度
-     */
-    private int mHeight;
-
-
-    /**
-     * 下个月偏移的数量
-     */
-    private int mNextDiff;
+public abstract class MonthView extends BaseMonthView {
 
     public MonthView(Context context) {
         super(context);
@@ -70,14 +33,14 @@ public abstract class MonthView extends BaseView {
     protected void onDraw(Canvas canvas) {
         if (mLineCount == 0)
             return;
-        mItemWidth = getWidth() / 7;
+        mItemWidth = (getWidth() - 2 * mDelegate.getCalendarPadding()) / 7;
         onPreviewHook();
         int count = mLineCount * 7;
         int d = 0;
         for (int i = 0; i < mLineCount; i++) {
             for (int j = 0; j < 7; j++) {
                 Calendar calendar = mItems.get(d);
-                if (mDelegate.getMonthViewShowMode() == CustomCalendarViewDelegate.MODE_ONLY_CURRENT_MONTH) {
+                if (mDelegate.getMonthViewShowMode() == CalendarViewDelegate.MODE_ONLY_CURRENT_MONTH) {
                     if (d > mItems.size() - mNextDiff) {
                         return;
                     }
@@ -85,7 +48,7 @@ public abstract class MonthView extends BaseView {
                         ++d;
                         continue;
                     }
-                } else if (mDelegate.getMonthViewShowMode() == CustomCalendarViewDelegate.MODE_FIT_MONTH) {
+                } else if (mDelegate.getMonthViewShowMode() == CalendarViewDelegate.MODE_FIT_MONTH) {
                     if (d >= count) {
                         return;
                     }
@@ -94,8 +57,6 @@ public abstract class MonthView extends BaseView {
                 ++d;
             }
         }
-
-
     }
 
 
@@ -109,7 +70,7 @@ public abstract class MonthView extends BaseView {
      * @param d        d
      */
     private void draw(Canvas canvas, Calendar calendar, int i, int j, int d) {
-        int x = j * mItemWidth;
+        int x = j * mItemWidth + mDelegate.getCalendarPadding();
         int y = i * mItemHeight;
         onLoopStart(x, y);
         boolean isSelected = d == mCurrentItem;
@@ -135,290 +96,131 @@ public abstract class MonthView extends BaseView {
     }
 
 
-    @SuppressWarnings("deprecation")
     @Override
     public void onClick(View v) {
-        if (isClick) {
-            Calendar calendar = getIndex();
-            if (calendar != null) {
+        if (!isClick) {
+            return;
+        }
+        Calendar calendar = getIndex();
 
-                if (mDelegate.getMonthViewShowMode() == CustomCalendarViewDelegate.MODE_ONLY_CURRENT_MONTH &&
-                        !calendar.isCurrentMonth()) {
-                    mCurrentItem = mItems.indexOf(mDelegate.mSelectedCalendar);
-                    return;
-                }
+        if (calendar == null) {
+            return;
+        }
 
-                if (!Util.isCalendarInRange(calendar, mDelegate.getMinYear(),
-                        mDelegate.getMinYearMonth(), mDelegate.getMaxYear(), mDelegate.getMaxYearMonth())) {
-                    mCurrentItem = mItems.indexOf(mDelegate.mSelectedCalendar);
-                    return;
-                }
+        if (mDelegate.getMonthViewShowMode() == CalendarViewDelegate.MODE_ONLY_CURRENT_MONTH &&
+                !calendar.isCurrentMonth()) {
+            return;
+        }
 
-                if (!calendar.isCurrentMonth() && mMonthViewPager != null) {
-                    int cur = mMonthViewPager.getCurrentItem();
-                    int position = mCurrentItem < 7 ? cur - 1 : cur + 1;
-                    mMonthViewPager.setCurrentItem(position);
-                }
+        if (onCalendarIntercept(calendar)) {
+            mDelegate.mCalendarInterceptListener.onCalendarInterceptClick(calendar, true);
+            return;
+        }
 
-                if (mDelegate.mInnerListener != null) {
-                    mDelegate.mInnerListener.onMonthDateSelected(calendar, true);
-                }
 
-                if (mParentLayout != null) {
-                    if (calendar.isCurrentMonth()) {
-                        mParentLayout.setSelectPosition(mItems.indexOf(calendar));
-                    } else {
-                        mParentLayout.setSelectWeek(Util.getWeekFromDayInMonth(calendar));
-                    }
-
-                }
-
-                if (mDelegate.mDateSelectedListener != null) {
-                    mDelegate.mDateSelectedListener.onDateSelected(calendar, true);
-                }
-                invalidate();
+        if (!isInRange(calendar)) {
+            if (mDelegate.mCalendarSelectListener != null) {
+                mDelegate.mCalendarSelectListener.onCalendarOutOfRange(calendar);
             }
+            return;
+        }
+
+        mCurrentItem = mItems.indexOf(calendar);
+
+        if (!calendar.isCurrentMonth() && mMonthViewPager != null) {
+            int cur = mMonthViewPager.getCurrentItem();
+            int position = mCurrentItem < 7 ? cur - 1 : cur + 1;
+            mMonthViewPager.setCurrentItem(position);
+        }
+
+        if (mDelegate.mInnerListener != null) {
+            mDelegate.mInnerListener.onMonthDateSelected(calendar, true);
+        }
+
+        if (mParentLayout != null) {
+            if (calendar.isCurrentMonth()) {
+                mParentLayout.updateSelectPosition(mItems.indexOf(calendar));
+            } else {
+                mParentLayout.updateSelectWeek(CalendarUtil.getWeekFromDayInMonth(calendar, mDelegate.getWeekStart()));
+            }
+
+        }
+
+        if (mDelegate.mCalendarSelectListener != null) {
+            mDelegate.mCalendarSelectListener.onCalendarSelect(calendar, true);
         }
     }
 
     @Override
     public boolean onLongClick(View v) {
-        if (mDelegate.mDateLongClickListener == null)
+        if (mDelegate.mCalendarLongClickListener == null)
             return false;
-        if (isClick) {
-            Calendar calendar = getIndex();
-            if (calendar != null) {
-                if (mDelegate.getMonthViewShowMode() == CustomCalendarViewDelegate.MODE_ONLY_CURRENT_MONTH &&
-                        !calendar.isCurrentMonth()) {
-                    mCurrentItem = mItems.indexOf(mDelegate.mSelectedCalendar);
-                    return false;
-                }
+        if (!isClick) {
+            return false;
+        }
+        Calendar calendar = getIndex();
+        if (calendar == null) {
+            return false;
+        }
 
-                if (!Util.isCalendarInRange(calendar, mDelegate.getMinYear(),
-                        mDelegate.getMinYearMonth(), mDelegate.getMaxYear(), mDelegate.getMaxYearMonth())) {
-                    mCurrentItem = mItems.indexOf(mDelegate.mSelectedCalendar);
-                    return false;
-                }
+        if (mDelegate.getMonthViewShowMode() == CalendarViewDelegate.MODE_ONLY_CURRENT_MONTH &&
+                !calendar.isCurrentMonth()) {
+            return false;
+        }
 
-                if (!calendar.isCurrentMonth() && mMonthViewPager != null) {
-                    int cur = mMonthViewPager.getCurrentItem();
-                    int position = mCurrentItem < 7 ? cur - 1 : cur + 1;
-                    mMonthViewPager.setCurrentItem(position);
-                }
 
-                if (mDelegate.mInnerListener != null) {
-                    mDelegate.mInnerListener.onMonthDateSelected(calendar, true);
-                }
+        if (onCalendarIntercept(calendar)) {
+            mDelegate.mCalendarInterceptListener.onCalendarInterceptClick(calendar, true);
+            return false;
+        }
 
-                if (mParentLayout != null) {
-                    if (calendar.isCurrentMonth()) {
-                        mParentLayout.setSelectPosition(mItems.indexOf(calendar));
-                    } else {
-                        mParentLayout.setSelectWeek(Util.getWeekFromDayInMonth(calendar));
-                    }
+        boolean isCalendarInRange = isInRange(calendar);
 
-                }
-
-                if (mDelegate.mDateSelectedListener != null) {
-                    mDelegate.mDateSelectedListener.onDateSelected(calendar, true);
-                }
-
-                mDelegate.mDateLongClickListener.onDateLongClick(calendar);
-                invalidate();
+        if (!isCalendarInRange) {
+            if (mDelegate.mCalendarLongClickListener != null) {
+                mDelegate.mCalendarLongClickListener.onCalendarLongClickOutOfRange(calendar);
             }
+            return true;
         }
-        return false;
-    }
 
-    private Calendar getIndex() {
-        int width = getWidth() / 7;
-        int indexX = (int) mX / width;
-        if (indexX >= 7) {
-            indexX = 6;
+        if (mDelegate.isPreventLongPressedSelected()) {
+            if (mDelegate.mCalendarLongClickListener != null) {
+                mDelegate.mCalendarLongClickListener.onCalendarLongClick(calendar);
+            }
+            return true;
         }
-        int indexY = (int) mY / mItemHeight;
-        mCurrentItem = indexY * 7 + indexX;// 选择项
-        if (mCurrentItem >= 0 && mCurrentItem < mItems.size())
-            return mItems.get(mCurrentItem);
-        return null;
-    }
 
 
-    /**
-     * 记录已经选择的日期
-     *
-     * @param calendar calendar
-     */
-    void setSelectedCalendar(Calendar calendar) {
         mCurrentItem = mItems.indexOf(calendar);
-    }
 
-    /**
-     * 初始化日期
-     *
-     * @param year  year
-     * @param month month
-     */
-    void setCurrentDate(int year, int month) {
-        mYear = year;
-        mMonth = month;
-        initCalendar();
-        if (mDelegate.getMonthViewShowMode() == CustomCalendarViewDelegate.MODE_ALL_MONTH) {
-            mHeight = mItemHeight * mLineCount;
-        } else {
-            mHeight = Util.getMonthViewHeight(year, month, mItemHeight);
+        if (!calendar.isCurrentMonth() && mMonthViewPager != null) {
+            int cur = mMonthViewPager.getCurrentItem();
+            int position = mCurrentItem < 7 ? cur - 1 : cur + 1;
+            mMonthViewPager.setCurrentItem(position);
         }
 
-    }
-
-    /**
-     * 初始化日历
-     */
-    @SuppressLint("WrongConstant")
-    private void initCalendar() {
-        java.util.Calendar date = java.util.Calendar.getInstance();
-
-        date.set(mYear, mMonth - 1, 1);
-        int mPreDiff = date.get(java.util.Calendar.DAY_OF_WEEK) - 1;
-        int mDayCount = Util.getMonthDaysCount(mYear, mMonth);
-        date.set(mYear, mMonth - 1, mDayCount);
-
-        int mLastCount = date.get(java.util.Calendar.DAY_OF_WEEK) - 1;
-        mNextDiff = 6 - mLastCount;//下个月的日偏移天数
-
-        int preYear, preMonth;
-        int nextYear, nextMonth;
-
-        int size = 42;
-
-        int preMonthDaysCount;
-        if (mMonth == 1) {//如果是1月
-            preYear = mYear - 1;
-            preMonth = 12;
-            nextYear = mYear;
-            nextMonth = mMonth + 1;
-            preMonthDaysCount = mPreDiff == 0 ? 0 : Util.getMonthDaysCount(preYear, preMonth);
-        } else if (mMonth == 12) {//如果是12月
-            preYear = mYear;
-            preMonth = mMonth - 1;
-            nextYear = mYear + 1;
-            nextMonth = 1;
-            preMonthDaysCount = mPreDiff == 0 ? 0 : Util.getMonthDaysCount(preYear, preMonth);
-        } else {//平常
-            preYear = mYear;
-            preMonth = mMonth - 1;
-            nextYear = mYear;
-            nextMonth = mMonth + 1;
-            preMonthDaysCount = mPreDiff == 0 ? 0 : Util.getMonthDaysCount(preYear, preMonth);
+        if (mDelegate.mInnerListener != null) {
+            mDelegate.mInnerListener.onMonthDateSelected(calendar, true);
         }
-        int nextDay = 1;
-        if (mItems == null)
-            mItems = new ArrayList<>();
-        mItems.clear();
-        for (int i = 0; i < size; i++) {
-            Calendar calendarDate = new Calendar();
-            if (i < mPreDiff) {
-                calendarDate.setYear(preYear);
-                calendarDate.setMonth(preMonth);
-                calendarDate.setDay(preMonthDaysCount - mPreDiff + i + 1);
-            } else if (i >= mDayCount + mPreDiff) {
-                calendarDate.setYear(nextYear);
-                calendarDate.setMonth(nextMonth);
-                calendarDate.setDay(nextDay);
-                ++nextDay;
+
+        if (mParentLayout != null) {
+            if (calendar.isCurrentMonth()) {
+                mParentLayout.updateSelectPosition(mItems.indexOf(calendar));
             } else {
-                calendarDate.setYear(mYear);
-                calendarDate.setMonth(mMonth);
-                calendarDate.setCurrentMonth(true);
-                calendarDate.setDay(i - mPreDiff + 1);
+                mParentLayout.updateSelectWeek(CalendarUtil.getWeekFromDayInMonth(calendar, mDelegate.getWeekStart()));
             }
-            if (calendarDate.equals(mDelegate.getCurrentDay())) {
-                calendarDate.setCurrentDay(true);
-                mCurrentItem = i;
-            }
-            LunarCalendar.setupLunarCalendar(calendarDate);
-            mItems.add(calendarDate);
+
         }
-        if (mDelegate.getMonthViewShowMode() == CustomCalendarViewDelegate.MODE_ALL_MONTH) {
-            mLineCount = 6;
-        } else {
-            mLineCount = (mPreDiff + mDayCount + mNextDiff) / 7;
+
+        if (mDelegate.mCalendarSelectListener != null) {
+            mDelegate.mCalendarSelectListener.onCalendarSelect(calendar, true);
         }
-        if (mDelegate.mSchemeDate != null) {
-            for (Calendar a : mItems) {
-                for (Calendar d : mDelegate.mSchemeDate) {
-                    if (d.equals(a)) {
-                        a.setScheme(TextUtils.isEmpty(d.getScheme()) ? mDelegate.getSchemeText() : d.getScheme());
-                        a.setSchemeColor(d.getSchemeColor());
-                        a.setSchemes(d.getSchemes());
-                    }
-                }
-            }
+
+        if (mDelegate.mCalendarLongClickListener != null) {
+            mDelegate.mCalendarLongClickListener.onCalendarLongClick(calendar);
         }
         invalidate();
-    }
-
-
-    @Override
-    void update() {
-        if (mDelegate.mSchemeDate == null || mDelegate.mSchemeDate.size() == 0) {//清空操作
-            for (Calendar a : mItems) {
-                a.setScheme("");
-                a.setSchemeColor(0);
-                a.setSchemes(null);
-            }
-            invalidate();
-            return;
-        }
-        for (Calendar a : mItems) {//添加操作
-            if(mDelegate.mSchemeDate.contains(a)){
-                Calendar d = mDelegate.mSchemeDate.get(mDelegate.mSchemeDate.indexOf(a));
-                a.setScheme(TextUtils.isEmpty(d.getScheme()) ? mDelegate.getSchemeText() : d.getScheme());
-                a.setSchemeColor(d.getSchemeColor());
-                a.setSchemes(d.getSchemes());
-            }else {
-                a.setScheme("");
-                a.setSchemeColor(0);
-                a.setSchemes(null);
-            }
-        }
-        invalidate();
-    }
-
-
-    int getSelectedIndex(Calendar calendar) {
-        return mItems.indexOf(calendar);
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (mLineCount != 0) {
-            heightMeasureSpec = MeasureSpec.makeMeasureSpec(mHeight, MeasureSpec.EXACTLY);
-        }
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    }
-
-    /**
-     * 开始绘制前的钩子，这里做一些初始化的操作，每次绘制只调用一次，性能高效
-     * 没有需要可忽略不实现
-     * 例如：
-     * 1、需要绘制圆形标记事件背景，可以在这里计算半径
-     * 2、绘制矩形选中效果，也可以在这里计算矩形宽和高
-     */
-    protected void onPreviewHook() {
-        // TODO: 2017/11/16
-    }
-
-
-    /**
-     * 循环绘制开始的回调，不需要可忽略
-     * 绘制每个日历项的循环，用来计算baseLine、圆心坐标等都可以在这里实现
-     *
-     * @param x 日历Card x起点坐标
-     * @param y 日历Card y起点坐标
-     */
-    protected void onLoopStart(int x, int y) {
-        // TODO: 2017/11/16  
+        return true;
     }
 
     /**

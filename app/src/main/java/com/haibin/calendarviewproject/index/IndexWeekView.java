@@ -31,12 +31,7 @@ public class IndexWeekView extends WeekView {
 
     @Override
     protected void onPreviewHook() {
-        mCurMonthTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mOtherMonthTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mSchemeTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mCurDayTextPaint.setTextSize(dipToPx(getContext(), 16));
-        mCurMonthLunarTextPaint.setTextSize(dipToPx(getContext(), 12));
-        mOtherMonthLunarTextPaint.setTextSize(dipToPx(getContext(), 12));
+
     }
 
     /**
@@ -47,7 +42,6 @@ public class IndexWeekView extends WeekView {
      * @param calendar  日历日历calendar
      * @param x         日历Card x起点坐标
      * @param hasScheme hasScheme 非标记的日期
-     * @return
      */
     @Override
     protected boolean onDrawSelected(Canvas canvas, Calendar calendar, int x, boolean hasScheme) {
@@ -63,6 +57,7 @@ public class IndexWeekView extends WeekView {
      * @param calendar 日历calendar
      * @param x        日历Card x起点坐标
      */
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @Override
     protected void onDrawScheme(Canvas canvas, Calendar calendar, int x) {
         mSchemeBasicPaint.setColor(calendar.getSchemeColor());
@@ -72,6 +67,7 @@ public class IndexWeekView extends WeekView {
                 mItemHeight - mH - mPadding, mSchemeBasicPaint);
     }
 
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @Override
     protected void onDrawText(Canvas canvas, Calendar calendar, int x, boolean hasScheme, boolean isSelected) {
         int cx = x + mItemWidth / 2;
@@ -80,12 +76,16 @@ public class IndexWeekView extends WeekView {
             canvas.drawText(String.valueOf(calendar.getDay()), cx, mTextBaseLine + top,
                     calendar.isCurrentDay() ? mCurDayTextPaint :
                             calendar.isCurrentMonth() ? mSchemeTextPaint : mCurMonthTextPaint);
-            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + mItemHeight / 10, mCurMonthLunarTextPaint);
+            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + mItemHeight / 10,
+                    calendar.isCurrentDay() ? mCurDayLunarTextPaint :
+                            mCurMonthLunarTextPaint);
         } else {
             canvas.drawText(String.valueOf(calendar.getDay()), cx, mTextBaseLine + top,
                     calendar.isCurrentDay() ? mCurDayTextPaint :
                             calendar.isCurrentMonth() ? mCurMonthTextPaint : mCurMonthTextPaint);
-            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + mItemHeight / 10, mCurMonthLunarTextPaint);
+            canvas.drawText(calendar.getLunar(), cx, mTextBaseLine + mItemHeight / 10,
+                    calendar.isCurrentDay() ? mCurDayLunarTextPaint :
+                    mCurMonthLunarTextPaint);
         }
     }
 
